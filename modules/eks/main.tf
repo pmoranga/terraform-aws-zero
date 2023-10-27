@@ -11,10 +11,7 @@ locals {
         max_capacity     = lookup(config, "asg_max_size", 3)
         min_capacity     = lookup(config, "asg_min_size", 1)
 
-        create_launch_template  = lookup(config, "use_large_ip_range", true)
-        launch_template_version = "1"
-        # Hopefully temporary, as there is an issue with the upstream module that leads to this value being non-deterministic with the default of "$Latest"
-        # See https://github.com/terraform-aws-modules/terraform-aws-eks/pull/1447
+        create_launch_template = lookup(config, "use_large_ip_range", true)
 
         ami_type           = lookup(config, "ami_type", "AL2_x86_64")
         instance_types     = lookup(config, "instance_types", [])
