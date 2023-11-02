@@ -73,3 +73,9 @@ variable "node_group_name_as_prefix" {
   type        = bool
   default     = false
 }
+
+variable "additional_tags" {
+  description = "set of additional tags to add to resources created"
+  type        = map(string)
+  default     = {}
+}

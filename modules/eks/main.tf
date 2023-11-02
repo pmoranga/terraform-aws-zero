@@ -63,9 +63,9 @@ module "eks" {
   cluster_enabled_log_types     = var.cluster_enabled_log_types
   cluster_log_retention_in_days = var.cluster_log_retention_in_days
 
-  tags = {
+  tags = merge({
     environment = var.environment
-  }
+  }, var.additional_tags)
 }
 
 resource "aws_eks_addon" "vpc_cni" {
