@@ -71,7 +71,9 @@ module "eks" {
 
   # Unfortunately fluentd doesn't yet support oidc auth so we need to grant it to the worker nodes
   # workers_additional_policies = ["arn:aws:iam::aws:policy/CloudWatchAgentServerPolicy"]
-  iam_role_additional_policies = ["arn:aws:iam::aws:policy/CloudWatchAgentServerPolicy"]
+  iam_role_additional_policies = {
+    CloudWatchAgentServerPolicy = "arn:aws:iam::aws:policy/CloudWatchAgentServerPolicy"
+  }
 
   # write_kubeconfig = false
 
