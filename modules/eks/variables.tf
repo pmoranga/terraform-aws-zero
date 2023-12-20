@@ -19,6 +19,11 @@ variable "private_subnets" {
   type        = list(string)
 }
 
+# variable "public_subnets" {
+#   description = "VPC subnets for the EKS cluster"
+#   type        = list(string)
+# }
+
 variable "vpc_id" {
   description = "VPC ID for EKS cluster"
 }

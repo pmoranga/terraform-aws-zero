@@ -7,9 +7,9 @@ locals {
         { name = "${var.cluster_name}-${n}" }
       ),
       {
-        desired_capacity = lookup(config, "asg_min_size", 1)
-        max_capacity     = lookup(config, "asg_max_size", 3)
-        min_capacity     = lookup(config, "asg_min_size", 1)
+        desired_size = lookup(config, "asg_min_size", 1)
+        max_size     = lookup(config, "asg_max_size", 3)
+        min_size     = lookup(config, "asg_min_size", 1)
 
         create_launch_template = lookup(config, "use_large_ip_range", true)
 
@@ -19,10 +19,10 @@ locals {
         disk_size          = 100
         kubelet_extra_args = lookup(config, "use_large_ip_range", true) ? "--max-pods=${lookup(config, "node_ip_limit", 110)}" : ""
 
-        k8s_labels = {
+        labels = {
           Environment = var.environment
         }
-        additional_tags = merge(
+        tags = merge(
           { Environment = var.environment },
           lookup(config, "additional_tags", {})
         )
@@ -33,39 +33,71 @@ locals {
 
 module "eks" {
   source  = "terraform-aws-modules/eks/aws"
-  version = "17.24.0"
+  version = "~> 19.0"
 
   cluster_name    = var.cluster_name
   cluster_version = var.cluster_version
-  subnets         = var.private_subnets
-  vpc_id          = var.vpc_id
-  enable_irsa     = true
 
-  node_groups = local.eks_node_group_config
+  cluster_endpoint_public_access = true
 
-  wait_for_cluster_timeout = 1800 # 30 minutes
+  subnet_ids = var.private_subnets
+  # control_plane_subnet_ids = var.public_subnets
 
-  manage_aws_auth = false # We are creating the aws_auth configmap in the kubernetes terraform
+  vpc_id      = var.vpc_id
+  enable_irsa = true
+
+
+  self_managed_node_group_defaults = {
+    instance_type                          = "m6i.large"
+    update_launch_template_default_version = true
+    iam_role_additional_policies = {
+      AmazonSSMManagedInstanceCore = "arn:aws:iam::aws:policy/AmazonSSMManagedInstanceCore"
+    }
+  }
+
+  eks_managed_node_groups = local.eks_node_group_config
+
+  # wait_for_cluster_timeout = 1800 # 30 minutes
+
+  manage_aws_auth_configmap = false
 
   # Compatibility fix - if this value changes on a running cluster there is a super obscure error message when running terraform plan:
   # Error: Get "http://localhost/apis/rbac.authorization.k8s.io/v1/clusterroles/helix-kubernetes-developer-stage": dial tcp [::1]:80: connect: connection refused
   # We can leave this option here to allow people to upgrade
-  cluster_iam_role_name = var.force_old_cluster_iam_role_name ? "k8s-${var.cluster_name}-cluster" : ""
-  workers_role_name     = "k8s-${var.cluster_name}-workers"
+  iam_role_name = var.force_old_cluster_iam_role_name ? "k8s-${var.cluster_name}-cluster" : ""
+  # workers_role_name     = "k8s-${var.cluster_name}-workers"
 
-  worker_create_cluster_primary_security_group_rules = true
+  # worker_create_cluster_primary_security_group_rules = true
 
   # Unfortunately fluentd doesn't yet support oidc auth so we need to grant it to the worker nodes
-  workers_additional_policies = ["arn:aws:iam::aws:policy/CloudWatchAgentServerPolicy"]
+  # workers_additional_policies = ["arn:aws:iam::aws:policy/CloudWatchAgentServerPolicy"]
+  iam_role_additional_policies = ["arn:aws:iam::aws:policy/CloudWatchAgentServerPolicy"]
 
-  write_kubeconfig = false
+  # write_kubeconfig = false
 
-  cluster_enabled_log_types     = var.cluster_enabled_log_types
-  cluster_log_retention_in_days = var.cluster_log_retention_in_days
+
+  cluster_enabled_log_types              = var.cluster_enabled_log_types
+  cloudwatch_log_group_retention_in_days = var.cluster_log_retention_in_days
+  cloudwatch_log_group_tags = merge({
+    environment = var.environment
+  }, var.additional_tags)
+
 
   tags = merge({
     environment = var.environment
   }, var.additional_tags)
+
+  cluster_addons = {
+    coredns = {
+      most_recent = true
+    }
+    kube-proxy = {
+      most_recent = true
+    }
+    vpc-cni = {
+      most_recent = true
+    }
+  }
 }
 
 resource "aws_eks_addon" "vpc_cni" {
