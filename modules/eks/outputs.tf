@@ -1,6 +1,6 @@
 output "cluster_id" {
   description = "Identifier of the EKS cluster"
-  value       = module.eks.cluster_id
+  value       = "${module.eks.cluster_name}${module.eks.cluster_id == null ? "" : ""}"
 }
 
 output "worker_iam_role_arn" {

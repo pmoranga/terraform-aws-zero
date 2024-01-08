@@ -11,19 +11,31 @@ locals {
         max_size     = lookup(config, "asg_max_size", 3)
         min_size     = lookup(config, "asg_min_size", 1)
 
-        create_launch_template = lookup(config, "use_large_ip_range", true)
+        create_launch_template     = true # lookup(config, "use_large_ip_range", true)
+        use_custom_launch_template = true
 
-        ami_type           = lookup(config, "ami_type", "AL2_x86_64")
-        instance_types     = lookup(config, "instance_types", [])
-        capacity_type      = lookup(config, "use_spot_instances", false) ? "SPOT" : "ON_DEMAND"
-        disk_size          = 100
+        ami_type       = lookup(config, "ami_type", "AL2_x86_64")
+        instance_types = lookup(config, "instance_types", [])
+        capacity_type  = lookup(config, "use_spot_instances", false) ? "SPOT" : "ON_DEMAND"
+        disk_size      = 100
+        block_device_mappings = {
+          xvda = {
+            device_name = "/dev/xvda"
+            ebs = {
+              delete_on_termination = true
+              encrypted             = true
+              volume_size           = 100
+              volume_type           = "gp3"
+            }
+          }
+        }
         kubelet_extra_args = lookup(config, "use_large_ip_range", true) ? "--max-pods=${lookup(config, "node_ip_limit", 110)}" : ""
 
         labels = {
           Environment = var.environment
         }
         tags = merge(
-          { Environment = var.environment },
+          { environment = var.environment },
           lookup(config, "additional_tags", {})
         )
         taints = lookup(config, "taints", {})
@@ -53,6 +65,19 @@ module "eks" {
     iam_role_additional_policies = {
       AmazonSSMManagedInstanceCore = "arn:aws:iam::aws:policy/AmazonSSMManagedInstanceCore"
     }
+    disk_size = 100
+
+
+    # block_device_mappings = {
+    #   xvda = {
+    #     device_name = " /dev/xvda"
+
+    #     ebs = {
+    #       volume_size = 100
+    #       encrypted   = true
+    #     }
+    #   }
+    # }
   }
 
   eks_managed_node_groups = local.eks_node_group_config
@@ -60,6 +85,18 @@ module "eks" {
   # wait_for_cluster_timeout = 1800 # 30 minutes
 
   manage_aws_auth_configmap = false
+
+  # manage_aws_auth_configmap = true
+
+
+  aws_auth_roles = [
+    {
+      rolearn  = "arn:aws:iam::66666666666:role/role1"
+      username = "role1"
+      groups   = ["system:masters"]
+    },
+  ]
+
 
   # Compatibility fix - if this value changes on a running cluster there is a super obscure error message when running terraform plan:
   # Error: Get "http://localhost/apis/rbac.authorization.k8s.io/v1/clusterroles/helix-kubernetes-developer-stage": dial tcp [::1]:80: connect: connection refused
@@ -80,9 +117,9 @@ module "eks" {
 
   cluster_enabled_log_types              = var.cluster_enabled_log_types
   cloudwatch_log_group_retention_in_days = var.cluster_log_retention_in_days
-  cloudwatch_log_group_tags = merge({
-    environment = var.environment
-  }, var.additional_tags)
+  # cloudwatch_log_group_tags = merge({
+  #   environment = var.environment
+  # }, var.additional_tags)
 
 
   tags = merge({
