@@ -63,6 +63,7 @@ Note: To fully enable prefix delegation, the ENABLE_PREFIX_DELEGATION environmen
 
 | Name | Description | Type | Default | Required |
 |------|-------------|------|---------|:--------:|
+| <a name="input_additional_labels"></a> [additional\_labels](#input\_additional\_labels) | Set extra K8S labels to nodes | `map(string)` | `{}` | no |
 | <a name="input_additional_tags"></a> [additional\_tags](#input\_additional\_tags) | set of additional tags to add to resources created | `map(string)` | `{}` | no |
 | <a name="input_addon_coredns_version"></a> [addon\_coredns\_version](#input\_addon\_coredns\_version) | Version of CoreDNS to install. If empty you will need to upgrade CoreDNS yourself during a cluster version upgrade | `string` | `""` | no |
 | <a name="input_addon_kube_proxy_version"></a> [addon\_kube\_proxy\_version](#input\_addon\_kube\_proxy\_version) | Version of kube proxy to install. If empty you will need to upgrade kube proxy yourself during a cluster version upgrade | `string` | `""` | no |

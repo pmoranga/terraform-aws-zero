@@ -84,3 +84,8 @@ variable "additional_tags" {
   type        = map(string)
   default     = {}
 }
+variable "additional_labels" {
+  description = "Set extra K8S labels to nodes "
+  type        = map(string)
+  default     = {}
+}

@@ -31,9 +31,10 @@ locals {
         }
         kubelet_extra_args = lookup(config, "use_large_ip_range", true) ? "--max-pods=${lookup(config, "node_ip_limit", 110)}" : ""
 
-        labels = {
-          Environment = var.environment
-        }
+        labels = merge(
+          { Environment = var.environment },
+          lookup(config, "additional_labels", {})
+        )
         tags = merge(
           { environment = var.environment },
           lookup(config, "additional_tags", {})
